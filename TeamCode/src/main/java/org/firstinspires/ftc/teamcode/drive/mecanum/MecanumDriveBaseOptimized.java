@@ -77,6 +77,7 @@ public class MecanumDriveBaseOptimized extends MecanumDrive {
         List<Double> wheelVelocities = new ArrayList<>();
         for (ExpansionHubMotor motor : motors) {
             wheelVelocities.add(encoderTicksToInches(bulkData.getMotorVelocity(motor)));
+            //wheelVelocities.add((double)bulkData.getMotorVelocity(motor));
         }
         return wheelVelocities;
     }
