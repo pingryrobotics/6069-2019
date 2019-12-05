@@ -18,6 +18,6 @@ public class Lift {
         winch.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         winch.setMode(DcMotor.RunMode.RUN_USING_ENCODER);//TODO: consider swapping for run to position
     }
-    public void setPosition()
-    public void update()
+    public void setPosition(){}
+    public void update(){}
 }

@@ -6,10 +6,10 @@ public class Foundation {
     private ExpansionHubServo leftServo;
     private ExpansionHubServo rightServo;
     //TODO: test servo bounds for actual position values
-    private final double kLeftGrabPosition = 0;
-    private final double kLeftReleasePosition = 0;
-    private final double kRightGrabPosition = 0;
-    private final double kRightReleasePosition = 0;
+    private final double kLeftGrabPosition = .5;
+    private final double kLeftReleasePosition = .9;
+    private final double kRightGrabPosition = .5;
+    private final double kRightReleasePosition = .9;
     private State state;
     public enum State{
         GRAB,
