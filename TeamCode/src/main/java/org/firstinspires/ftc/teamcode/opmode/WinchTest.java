@@ -12,15 +12,7 @@ public class WinchTest extends LinearOpMode {
         winch.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         winch.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         while(!isStopRequested()){
-            if (gamepad1.a){
-                winch.setPower(-.3);
-            }
-            else if (gamepad1.b){
-                winch.setPower(.3);
-            }
-            else{
-                winch.setPower(0);
-            }
+
             telemetry.addData("winch power",winch.getPower());
             telemetry.update();
         }
