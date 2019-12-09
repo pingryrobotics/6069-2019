@@ -51,6 +51,7 @@ public class MecanumDriveBaseOptimized extends MecanumDrive implements Subsystem
     private double dt;
     private Pose2d currentPose = new Pose2d(0,0,0);
     private Mode mode;
+    private Pose2d robotVelocity = new Pose2d(0,0,0);
     private HardwareMap m_hardwareMap;
     public MecanumDriveBaseOptimized(HardwareMap hardwareMap) {
         super(0,0,0, DriveConstants.TRACK_WIDTH,DriveConstants.WHEEL_BASE);
@@ -95,6 +96,7 @@ public class MecanumDriveBaseOptimized extends MecanumDrive implements Subsystem
         dt = elapsedTime.time();
         dt = dt/(double)1000;
         Pose2d robotRelativeVelocity = MecanumKinematics.wheelToRobotVelocities(wheelVelocities, DriveConstants.TRACK_WIDTH, DriveConstants.WHEEL_BASE);
+        robotVelocity = robotRelativeVelocity;
         Pose2d fieldRelativeVelocity = new Pose2d(new Vector2d(robotRelativeVelocity.getX(),robotRelativeVelocity.getY()).rotated(this.getRawExternalHeading()),robotRelativeVelocity.getHeading());
         Pose2d poseDelta = fieldRelativeVelocity.times(dt);
         currentPose = currentPose.plus(poseDelta);
@@ -128,6 +130,9 @@ public class MecanumDriveBaseOptimized extends MecanumDrive implements Subsystem
             //wheelVelocities.add((double)bulkData.getMotorVelocity(motor));
         }
         return wheelVelocities;
+    }
+    public Pose2d getRobotVelocity(){
+        return robotVelocity;
     }
     public void setMotorPowers(double v, double v1, double v2, double v3) {
         leftFront.setPower(v);
