@@ -34,18 +34,10 @@ public class driveStraightAuto extends LinearOpMode {
         yTranslationController.setTargetPosition(0);
         headingController.setTargetPosition(Math.toRadians(30));
         while(!isStopRequested()){
-            List<Double> wheelVelocities = drive.getWheelVelocities();
-            now = System.currentTimeMillis();
-            dt = now - last;
-            dt = dt / ((double) 1000);
-            Pose2d robotFrameVelocity = MecanumKinematics.wheelToRobotVelocities(wheelVelocities, DriveConstants.TRACK_WIDTH, DriveConstants.WHEEL_BASE);
-            Pose2d robotFrameVelocityRotated = new Pose2d(new Vector2d(robotFrameVelocity.getX(),robotFrameVelocity.getY()).rotated(drive.getRawExternalHeading()),robotFrameVelocity.getHeading());
-            Pose2d poseDelta = robotFrameVelocityRotated.times(dt);
-            currentPose = currentPose.plus(poseDelta);
-            last = now;
-            drive.setDrivePower(new Pose2d(xTranslationController.update(currentPose.getX(),robotFrameVelocity.getX()),
-            yTranslationController.update(currentPose.getY(),robotFrameVelocity.getY()),
-            headingController.update(currentPose.getHeading(),robotFrameVelocity.getHeading())));
+            drive.update();
+            drive.setDrivePower(new Pose2d(xTranslationController.update(currentPose.getX(),drive.getRobotVelocity().getX()),
+            yTranslationController.update(currentPose.getY(),drive.getRobotVelocity().getY()),
+            headingController.update(currentPose.getHeading(),drive.getRobotVelocity().getHeading())));
             telemetry.addData("Current Pose:",currentPose);
             telemetry.update();
         }

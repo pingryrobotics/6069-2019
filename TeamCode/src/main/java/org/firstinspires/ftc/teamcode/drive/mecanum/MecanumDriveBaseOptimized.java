@@ -6,15 +6,19 @@ import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.drive.MecanumDrive;
 import com.acmerobotics.roadrunner.followers.HolonomicPIDVAFollower;
 import com.acmerobotics.roadrunner.followers.TrajectoryFollower;
+import com.acmerobotics.roadrunner.geometry.Vector2d;
+import com.acmerobotics.roadrunner.kinematics.MecanumKinematics;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.acmerobotics.roadrunner.trajectory.constraints.DriveConstraints;
 import com.acmerobotics.roadrunner.trajectory.constraints.MecanumConstraints;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.teamcode.drive.DriveConstants;
+import org.firstinspires.ftc.teamcode.subsystems.Subsystem;
 import org.openftc.revextensions2.ExpansionHubEx;
 import org.openftc.revextensions2.ExpansionHubMotor;
 import org.openftc.revextensions2.RevBulkData;
@@ -30,7 +34,7 @@ import static org.firstinspires.ftc.teamcode.drive.DriveConstants.RUN_USING_ENCO
 import static org.firstinspires.ftc.teamcode.drive.DriveConstants.TRACK_WIDTH;
 import static org.firstinspires.ftc.teamcode.drive.DriveConstants.encoderTicksToInches;
 
-public class MecanumDriveBaseOptimized extends MecanumDrive {
+public class MecanumDriveBaseOptimized extends MecanumDrive implements Subsystem {
     public enum Mode {
         IDLE,
         FOLLOW_TRAJECTORY
@@ -40,26 +44,32 @@ public class MecanumDriveBaseOptimized extends MecanumDrive {
     private DriveConstraints constraints;
     private TrajectoryFollower follower;
     private ExpansionHubEx hub;
+    private ElapsedTime elapsedTime;
     private ExpansionHubMotor leftFront, leftRear, rightRear, rightFront;
     private List<ExpansionHubMotor> motors;
     public BNO055IMU imu;
+    private double dt;
+    private Pose2d currentPose = new Pose2d(0,0,0);
     private Mode mode;
+    private Pose2d robotVelocity = new Pose2d(0,0,0);
+    private HardwareMap m_hardwareMap;
     public MecanumDriveBaseOptimized(HardwareMap hardwareMap) {
         super(0,0,0, DriveConstants.TRACK_WIDTH,DriveConstants.WHEEL_BASE);
-
         LynxModuleUtil.ensureMinimumFirmwareVersion(hardwareMap);
+        m_hardwareMap = hardwareMap;
+    }
+    public void initialize(){
+        hub = m_hardwareMap.get(ExpansionHubEx.class, "controlHub");
 
-        hub = hardwareMap.get(ExpansionHubEx.class, "controlHub");
-
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu = m_hardwareMap.get(BNO055IMU.class, "imu");
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
         imu.initialize(parameters);
 
-        leftFront = hardwareMap.get(ExpansionHubMotor.class, "leftFront");
-        leftRear = hardwareMap.get(ExpansionHubMotor.class, "leftRear");
-        rightRear = hardwareMap.get(ExpansionHubMotor.class, "rightRear");
-        rightFront = hardwareMap.get(ExpansionHubMotor.class, "rightFront");
+        leftFront = m_hardwareMap.get(ExpansionHubMotor.class, "leftFront");
+        leftRear = m_hardwareMap.get(ExpansionHubMotor.class, "leftRear");
+        rightRear = m_hardwareMap.get(ExpansionHubMotor.class, "rightRear");
+        rightFront = m_hardwareMap.get(ExpansionHubMotor.class, "rightFront");
 
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
 
@@ -75,6 +85,24 @@ public class MecanumDriveBaseOptimized extends MecanumDrive {
         leftRear.setDirection(DcMotor.Direction.REVERSE);
         constraints = new MecanumConstraints(BASE_CONSTRAINTS, TRACK_WIDTH);
         follower = new HolonomicPIDVAFollower(TRANSLATIONAL_PID, TRANSLATIONAL_PID, HEADING_PID);
+        elapsedTime = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+        dt = elapsedTime.time();
+    }
+    public void update(){
+        updateOdometry();
+    }
+    public void updateOdometry(){
+        List<Double> wheelVelocities = this.getWheelVelocities();
+        dt = elapsedTime.time();
+        dt = dt/(double)1000;
+        Pose2d robotRelativeVelocity = MecanumKinematics.wheelToRobotVelocities(wheelVelocities, DriveConstants.TRACK_WIDTH, DriveConstants.WHEEL_BASE);
+        robotVelocity = robotRelativeVelocity;
+        Pose2d fieldRelativeVelocity = new Pose2d(new Vector2d(robotRelativeVelocity.getX(),robotRelativeVelocity.getY()).rotated(this.getRawExternalHeading()),robotRelativeVelocity.getHeading());
+        Pose2d poseDelta = fieldRelativeVelocity.times(dt);
+        currentPose = currentPose.plus(poseDelta);
+    }
+    public Pose2d getCurrentPose(){
+        return currentPose;
     }
     public List<Double> getWheelPositions() {
         RevBulkData bulkData = hub.getBulkInputData();
@@ -102,6 +130,9 @@ public class MecanumDriveBaseOptimized extends MecanumDrive {
             //wheelVelocities.add((double)bulkData.getMotorVelocity(motor));
         }
         return wheelVelocities;
+    }
+    public Pose2d getRobotVelocity(){
+        return robotVelocity;
     }
     public void setMotorPowers(double v, double v1, double v2, double v3) {
         leftFront.setPower(v);
