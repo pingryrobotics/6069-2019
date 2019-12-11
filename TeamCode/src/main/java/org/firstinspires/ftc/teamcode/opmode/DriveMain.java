@@ -44,7 +44,7 @@ public class DriveMain extends LinearOpMode {
             for(Subsystem subsystem : subsystems){
                 subsystem.update();
             }
-            Vector2d translationRotatedForFieldCentric = new Vector2d(-gamepad1.left_stick_x, -gamepad1.left_stick_y).rotated(drive.getRawExternalHeading());
+            Vector2d translationRotatedForFieldCentric = new Vector2d(-gamepad1.left_stick_x, -gamepad1.left_stick_y);
             drive.setDrivePower(new Pose2d(translationRotatedForFieldCentric.getY(),translationRotatedForFieldCentric.getX(), -gamepad1.right_stick_x/4));
             telemetry.addData("Current Pose:",drive.getCurrentPose());
             telemetry.update();
