@@ -28,10 +28,10 @@ public class Lift implements Subsystem{
     public void setPosition(){}
     public void update(){
         if (m_gamepad.a){
-            winch.setPower(-.5);
+            winch.setPower(-.7);
         }
         else if (m_gamepad.b){
-            winch.setPower(.5);
+            winch.setPower(.7);
         }
         else{
             winch.setPower(0);

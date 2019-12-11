@@ -21,11 +21,13 @@ import org.firstinspires.ftc.teamcode.subsystems.Subsystem;
 import org.openftc.revextensions2.ExpansionHubMotor;
 import org.openftc.revextensions2.ExpansionHubServo;
 import org.openftc.revextensions2.RevBulkData;
+
+import java.util.ArrayList;
 import java.util.List;
 
 @TeleOp(group="drive")
 public class DriveMain extends LinearOpMode {
-    private List<Subsystem> subsystems;
+    private List<Subsystem> subsystems = new ArrayList<>(3);
     @Override
     public void runOpMode() throws InterruptedException{
         MecanumDriveBaseOptimized drive = new MecanumDriveBaseOptimized(hardwareMap);
@@ -34,9 +36,10 @@ public class DriveMain extends LinearOpMode {
         subsystems.add(foundation);
         subsystems.add(lift);
         subsystems.add(drive);
+        for(Subsystem subsystem : subsystems){
+            subsystem.initialize();
+        }
         waitForStart();
-        double posIn = .1;
-        double posOut = .9;
         while(!isStopRequested()) {
             for(Subsystem subsystem : subsystems){
                 subsystem.update();

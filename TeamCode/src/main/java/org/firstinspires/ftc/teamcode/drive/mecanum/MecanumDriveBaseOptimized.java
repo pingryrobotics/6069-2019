@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.drive.mecanum;
 
 import com.acmerobotics.roadrunner.control.PIDCoefficients;
+import com.acmerobotics.roadrunner.control.PIDFController;
 import com.acmerobotics.roadrunner.drive.DriveSignal;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.drive.MecanumDrive;
@@ -37,10 +38,14 @@ import static org.firstinspires.ftc.teamcode.drive.DriveConstants.encoderTicksTo
 public class MecanumDriveBaseOptimized extends MecanumDrive implements Subsystem {
     public enum Mode {
         IDLE,
-        FOLLOW_TRAJECTORY
+        FOLLOW_TRAJECTORY,
+        RUN_TO_POSE
     }
-    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(0, 0, 0);
-    public static PIDCoefficients HEADING_PID = new PIDCoefficients(0, 0, 0);
+    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(.2,0.001,.0005);
+    public static PIDCoefficients HEADING_PID = new PIDCoefficients(.05,0.0001,0.002);
+    PIDFController xTranslationController = new PIDFController(TRANSLATIONAL_PID);
+    PIDFController yTranslationController = new PIDFController(TRANSLATIONAL_PID);
+    PIDFController headingController = new PIDFController(HEADING_PID);
     private DriveConstraints constraints;
     private TrajectoryFollower follower;
     private ExpansionHubEx hub;
@@ -90,6 +95,48 @@ public class MecanumDriveBaseOptimized extends MecanumDrive implements Subsystem
     }
     public void update(){
         updateOdometry();
+        if (mode == Mode.RUN_TO_POSE){
+            if (isInRange()){
+                setDrivePower(new Pose2d(0,0,0));
+                mode = Mode.IDLE;
+            }
+            else {
+                setDrivePower(new Pose2d(xTranslationController.update(currentPose.getX(), robotVelocity.getX()),
+                        yTranslationController.update(currentPose.getY(), robotVelocity.getY()),
+                        headingController.update(currentPose.getHeading(), robotVelocity.getHeading())));
+            }
+        }
+    }
+    public void runToPose(Pose2d desiredPose){
+        mode = Mode.RUN_TO_POSE;
+        xTranslationController.reset();
+        yTranslationController.reset();
+        headingController.reset();
+        xTranslationController.setTargetPosition(desiredPose.getX());
+        yTranslationController.setTargetPosition(desiredPose.getY());
+        headingController.setTargetPosition(desiredPose.getHeading());
+    }
+    public void runToPoseSync(Pose2d desiredPose){
+        runToPose(desiredPose);
+        waitForIdle();
+    }
+    public void waitForIdle(){
+        while(!Thread.currentThread().isInterrupted()&&isBusy()){
+            update();
+        }
+    }
+    public boolean isInRange(){
+        boolean inRange = true;
+        if(headingController.getLastError() > .1){
+            inRange = false;
+        }
+        if(xTranslationController.getLastError() > .1) {
+            inRange = false;
+        }
+        if(yTranslationController.getLastError() > .1){
+            inRange = false;
+        }
+        return inRange;
     }
     public void updateOdometry(){
         List<Double> wheelVelocities = this.getWheelVelocities();
