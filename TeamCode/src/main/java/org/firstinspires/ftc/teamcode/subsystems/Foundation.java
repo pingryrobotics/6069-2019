@@ -8,7 +8,7 @@ public class Foundation implements Subsystem {
     private ExpansionHubServo rightServo;
     //TODO: test servo bounds for actual position values
     private final double kLeftGrabPosition = .5;
-    private final double kLeftReleasePosition = .9;
+    private final double kLeftReleasePosition = .1;
     private final double kRightGrabPosition = .5;
     private final double kRightReleasePosition = .9;
     private State state;
@@ -25,6 +25,7 @@ public class Foundation implements Subsystem {
     public void initialize(){
         leftServo = m_hardwareMap.get(ExpansionHubServo.class,"leftServo");
         rightServo = m_hardwareMap.get(ExpansionHubServo.class,"rightServo");
+        this.state = State.GRAB;
     }
     public void update(){
         if (m_gamepad.x && this.state!=State.GRAB){
@@ -34,14 +35,18 @@ public class Foundation implements Subsystem {
             release();
         }
     }
-    private void grab(){
-        leftServo.setPosition(kLeftGrabPosition);
-        rightServo.setPosition(kRightGrabPosition);
-        this.state = State.GRAB;
+    public void grab(){
+        if (this.state == State.RELEASE){
+            leftServo.setPosition(kLeftGrabPosition);
+            rightServo.setPosition(kRightGrabPosition);
+            this.state = State.GRAB;
+        }
     }
-    private void release(){
-        leftServo.setPosition(kLeftReleasePosition);
-        rightServo.setPosition(kRightReleasePosition);
-        this.state = State.RELEASE;
+    public void release(){
+        if (this.state == State.GRAB){
+            leftServo.setPosition(kLeftReleasePosition);
+            rightServo.setPosition(kRightReleasePosition);
+            this.state = State.RELEASE;
+        }
     }
 }
