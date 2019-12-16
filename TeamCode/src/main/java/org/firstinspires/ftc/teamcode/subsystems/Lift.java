@@ -52,7 +52,7 @@ public class Lift implements Subsystem{
     public void goDown(){
         winch.setPower(.7);
     }
-    public void stopWinch(){
+    public void stopWinch() {
         winch.setPower(0);
     }
 }
