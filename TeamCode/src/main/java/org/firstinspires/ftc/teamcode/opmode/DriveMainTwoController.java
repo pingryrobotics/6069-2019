@@ -25,14 +25,14 @@ import org.openftc.revextensions2.RevBulkData;
 import java.util.ArrayList;
 import java.util.List;
 
-@TeleOp(group="drive",name = "1 Controller Drive")
-public class DriveMain extends LinearOpMode {
+@TeleOp(group="drive",name = "2 Controller Drive")
+public class DriveMainTwoController extends LinearOpMode {
     private List<Subsystem> subsystems = new ArrayList<>(3);
     @Override
     public void runOpMode() throws InterruptedException{
         MecanumDriveBaseOptimized drive = new MecanumDriveBaseOptimized(hardwareMap,telemetry);
-        Lift lift = new Lift(hardwareMap,gamepad1);
-        Foundation foundation = new Foundation(hardwareMap,gamepad1);
+        Lift lift = new Lift(hardwareMap,gamepad2);
+        Foundation foundation = new Foundation(hardwareMap,gamepad2);
         subsystems.add(foundation);
         subsystems.add(lift);
         subsystems.add(drive);

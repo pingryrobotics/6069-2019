@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.drive.mecanum;
 
 import com.acmerobotics.roadrunner.control.PIDCoefficients;
+import com.acmerobotics.roadrunner.control.PIDFController;
 import com.acmerobotics.roadrunner.drive.DriveSignal;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.drive.MecanumDrive;
@@ -16,6 +17,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.teamcode.drive.DriveConstants;
 import org.firstinspires.ftc.teamcode.subsystems.Subsystem;
@@ -37,10 +39,14 @@ import static org.firstinspires.ftc.teamcode.drive.DriveConstants.encoderTicksTo
 public class MecanumDriveBaseOptimized extends MecanumDrive implements Subsystem {
     public enum Mode {
         IDLE,
-        FOLLOW_TRAJECTORY
+        FOLLOW_TRAJECTORY,
+        RUN_TO_POSE
     }
-    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(0, 0, 0);
-    public static PIDCoefficients HEADING_PID = new PIDCoefficients(0, 0, 0);
+    public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(.2,0.001,.01);
+    public static PIDCoefficients HEADING_PID = new PIDCoefficients(.2,0.001,0.01);
+    public PIDFController xTranslationController = new PIDFController(TRANSLATIONAL_PID);
+    public PIDFController yTranslationController = new PIDFController(TRANSLATIONAL_PID);
+    public PIDFController headingController = new PIDFController(HEADING_PID);
     private DriveConstraints constraints;
     private TrajectoryFollower follower;
     private ExpansionHubEx hub;
@@ -48,15 +54,20 @@ public class MecanumDriveBaseOptimized extends MecanumDrive implements Subsystem
     private ExpansionHubMotor leftFront, leftRear, rightRear, rightFront;
     private List<ExpansionHubMotor> motors;
     public BNO055IMU imu;
-    private double dt;
+    public double dt;
+    private double prevTime;
+    private Pose2d m_currentDesiredPose;
+    private double currTime;
+    private Telemetry m_telemetry;
     private Pose2d currentPose = new Pose2d(0,0,0);
-    private Mode mode;
+    public Mode mode;
     private Pose2d robotVelocity = new Pose2d(0,0,0);
     private HardwareMap m_hardwareMap;
-    public MecanumDriveBaseOptimized(HardwareMap hardwareMap) {
+    public MecanumDriveBaseOptimized(HardwareMap hardwareMap, Telemetry telemetry) {
         super(0,0,0, DriveConstants.TRACK_WIDTH,DriveConstants.WHEEL_BASE);
         LynxModuleUtil.ensureMinimumFirmwareVersion(hardwareMap);
         m_hardwareMap = hardwareMap;
+        m_telemetry = telemetry;
     }
     public void initialize(){
         hub = m_hardwareMap.get(ExpansionHubEx.class, "controlHub");
@@ -86,15 +97,66 @@ public class MecanumDriveBaseOptimized extends MecanumDrive implements Subsystem
         constraints = new MecanumConstraints(BASE_CONSTRAINTS, TRACK_WIDTH);
         follower = new HolonomicPIDVAFollower(TRANSLATIONAL_PID, TRANSLATIONAL_PID, HEADING_PID);
         elapsedTime = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
-        dt = elapsedTime.time();
+        prevTime = elapsedTime.time()/(double)1000;
     }
     public void update(){
         updateOdometry();
+        m_telemetry.addData("in range",isInRange());
+        if (mode == Mode.RUN_TO_POSE){
+            if (isInRange()){
+                setDrivePower(new Pose2d(0,0,0));
+                mode = Mode.IDLE;
+            }
+            else {
+                setDrivePower(new Pose2d(xTranslationController.update(currentPose.getX(), robotVelocity.getX()),
+                        yTranslationController.update(currentPose.getY(), robotVelocity.getY()),
+                        headingController.update(currentPose.getHeading(), robotVelocity.getHeading())));
+            }
+        }
+        m_telemetry.addData("Desired Pose",m_currentDesiredPose);
+        m_telemetry.addData("Pose Error",new Pose2d(xTranslationController.getLastError(),yTranslationController.getLastError(),headingController.getLastError()));
+        m_telemetry.update();
+    }
+    public void runToPose(Pose2d desiredPose){
+        xTranslationController.reset();
+        yTranslationController.reset();
+        headingController.reset();
+        xTranslationController.setTargetPosition(desiredPose.getX());
+        yTranslationController.setTargetPosition(desiredPose.getY());
+        headingController.setTargetPosition(desiredPose.getHeading());
+        xTranslationController.update(currentPose.getX(), robotVelocity.getX());
+        yTranslationController.update(currentPose.getY(), robotVelocity.getY());
+        headingController.update(currentPose.getHeading(), robotVelocity.getHeading());
+    }
+    public void runToPoseSync(Pose2d desiredPose){
+        mode = Mode.RUN_TO_POSE;
+        m_currentDesiredPose = desiredPose;
+        runToPose(desiredPose);
+        waitForIdle();
+    }
+    public void waitForIdle(){
+        while(!Thread.currentThread().isInterrupted()&&isBusy()){
+            update();
+        }
+    }
+    public boolean isInRange(){
+        boolean inRange = true;
+        if(Math.abs(headingController.getLastError()) > .15){
+            inRange = false;
+        }
+        if(Math.abs(xTranslationController.getLastError()) > .3) {
+            inRange = false;
+        }
+        if(Math.abs(yTranslationController.getLastError()) > .3){
+            inRange = false;
+        }
+        return inRange;
     }
     public void updateOdometry(){
         List<Double> wheelVelocities = this.getWheelVelocities();
-        dt = elapsedTime.time();
-        dt = dt/(double)1000;
+        currTime = elapsedTime.time()/(double)1000;
+        dt = currTime - prevTime;
+        prevTime = currTime;
         Pose2d robotRelativeVelocity = MecanumKinematics.wheelToRobotVelocities(wheelVelocities, DriveConstants.TRACK_WIDTH, DriveConstants.WHEEL_BASE);
         robotVelocity = robotRelativeVelocity;
         Pose2d fieldRelativeVelocity = new Pose2d(new Vector2d(robotRelativeVelocity.getX(),robotRelativeVelocity.getY()).rotated(this.getRawExternalHeading()),robotRelativeVelocity.getHeading());

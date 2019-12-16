@@ -18,7 +18,7 @@ import org.firstinspires.ftc.teamcode.drive.mecanum.MecanumDriveBaseOptimized;
 
 import java.util.List;
 @Autonomous
-public class driveStraightAuto extends LinearOpMode {
+public class DriveStraightAuto extends LinearOpMode {
     double dt;
     double last;
     double now;
@@ -27,7 +27,7 @@ public class driveStraightAuto extends LinearOpMode {
     PIDFController yTranslationController = new PIDFController(new PIDCoefficients(.05,0,.0005));
     PIDFController headingController = new PIDFController(new PIDCoefficients(.05,0.0001,0.002));
     public void runOpMode(){
-        MecanumDriveBaseOptimized drive = new MecanumDriveBaseOptimized(hardwareMap);
+        MecanumDriveBaseOptimized drive = new MecanumDriveBaseOptimized(hardwareMap,telemetry);
         waitForStart();
         last = System.currentTimeMillis();
         xTranslationController.setTargetPosition(36);

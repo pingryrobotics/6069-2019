@@ -4,16 +4,17 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
+import org.firstinspires.ftc.teamcode.subsystems.Lift;
 import org.openftc.revextensions2.ExpansionHubMotor;
 @TeleOp(group="test")
 public class WinchTest extends LinearOpMode {
+    private Lift lift;
     public void runOpMode() throws InterruptedException{
-        ExpansionHubMotor winch = hardwareMap.get(ExpansionHubMotor.class,"winch");
-        winch.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        winch.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        lift = new Lift(hardwareMap,gamepad1);
+        lift.initialize();
+        waitForStart();
         while(!isStopRequested()){
-
-            telemetry.addData("winch power",winch.getPower());
+            lift.update();
             telemetry.update();
         }
     }
