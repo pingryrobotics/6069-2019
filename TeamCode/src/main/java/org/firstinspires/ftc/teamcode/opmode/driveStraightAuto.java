@@ -18,7 +18,7 @@ import org.firstinspires.ftc.teamcode.drive.mecanum.MecanumDriveBaseOptimized;
 
 import java.util.List;
 @Autonomous
-public class driveStraightAuto extends LinearOpMode {
+public class DriveStraightAuto extends LinearOpMode {
     double dt;
     double last;
     double now;
