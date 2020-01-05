@@ -37,8 +37,10 @@ public class FoundationAutoBlue extends LinearOpMode {
         Thread.sleep(1000);
         drive.runToPoseSync(new Pose2d(0,12,Math.toRadians(0)));
         foundation.release();
+        lift.goDown();
         Thread.sleep(1000);
-        drive.runToPoseSync(new Pose2d(4,-40,Math.toRadians(0)));
-        Thread.sleep(1000);
+        lift.stopWinch();
+        drive.runToPoseSync(new Pose2d(0,-48,Math.toRadians(0)));
+        drive.runToPoseSync(new Pose2d(2,0,Math.toRadians(0)));
     }
 }
