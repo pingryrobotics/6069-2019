@@ -34,6 +34,7 @@ import org.firstinspires.ftc.teamcode.util.*;
 import static org.firstinspires.ftc.teamcode.drive.DriveConstants.BASE_CONSTRAINTS;
 import static org.firstinspires.ftc.teamcode.drive.DriveConstants.RUN_USING_ENCODER;
 import static org.firstinspires.ftc.teamcode.drive.DriveConstants.TRACK_WIDTH;
+import static org.firstinspires.ftc.teamcode.drive.DriveConstants.WHEEL_BASE;
 import static org.firstinspires.ftc.teamcode.drive.DriveConstants.encoderTicksToInches;
 
 public class MecanumDriveBaseOptimized extends MecanumDrive implements Subsystem {
@@ -64,7 +65,7 @@ public class MecanumDriveBaseOptimized extends MecanumDrive implements Subsystem
     private Pose2d robotVelocity = new Pose2d(0,0,0);
     private HardwareMap m_hardwareMap;
     public MecanumDriveBaseOptimized(HardwareMap hardwareMap, Telemetry telemetry) {
-        super(0,0,0, DriveConstants.TRACK_WIDTH,DriveConstants.WHEEL_BASE);
+        super(0,0,0,TRACK_WIDTH,WHEEL_BASE);
         LynxModuleUtil.ensureMinimumFirmwareVersion(hardwareMap);
         m_hardwareMap = hardwareMap;
         m_telemetry = telemetry;
@@ -157,7 +158,7 @@ public class MecanumDriveBaseOptimized extends MecanumDrive implements Subsystem
         currTime = elapsedTime.time()/(double)1000;
         dt = currTime - prevTime;
         prevTime = currTime;
-        Pose2d robotRelativeVelocity = MecanumKinematics.wheelToRobotVelocities(wheelVelocities, DriveConstants.TRACK_WIDTH, DriveConstants.WHEEL_BASE);
+        Pose2d robotRelativeVelocity = MecanumKinematics.wheelToRobotVelocities(wheelVelocities, TRACK_WIDTH, WHEEL_BASE);
         robotVelocity = robotRelativeVelocity;
         Pose2d fieldRelativeVelocity = new Pose2d(new Vector2d(robotRelativeVelocity.getX(),robotRelativeVelocity.getY()).rotated(this.getRawExternalHeading()),robotRelativeVelocity.getHeading());
         Pose2d poseDelta = fieldRelativeVelocity.times(dt);
